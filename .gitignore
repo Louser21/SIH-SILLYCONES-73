@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+npm-debug.log*
+
+# Env files
+.env
+
+# OS/editor
+.DS_Store
+.vscode/
+
+# Data/artifacts
+*.csv
+*.parquet
+*.pkl
+*.joblib
+ml/artifacts/

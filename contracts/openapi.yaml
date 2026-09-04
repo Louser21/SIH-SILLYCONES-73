@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: SIH SILLYCONES API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /api/v1/anomaly:
+    post:
+      summary: Detect anomaly for a sensor reading
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SensorReading'
+      responses:
+        '200':
+          description: Anomaly detection result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomalyResponse'
+components:
+  schemas:
+    SensorReading:
+      type: object
+      required:
+        - station_id
+        - timestamp
+        - temperature
+        - humidity
+      properties:
+        station_id:
+          type: string
+          example: S01
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-09-05T12:30:00Z'
+        temperature:
+          type: number
+          example: 34.2
+        humidity:
+          type: number
+          example: 71
+      additionalProperties: false
+    AnomalyResponse:
+      type: object
+      required:
+        - anomaly
+        - score
+        - reason
+      properties:
+        anomaly:
+          type: boolean
+          example: true
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.87
+        reason:
+          type: string
+          example: Temperature-humidity inconsistency
+      additionalProperties: false

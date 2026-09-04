@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sih-sillycones-73/contracts/anomaly.schema.json",
+  "title": "AnomalyDetectionContract",
+  "type": "object",
+  "required": [
+    "station_id",
+    "timestamp",
+    "temperature",
+    "humidity"
+  ],
+  "properties": {
+    "station_id": {
+      "type": "string",
+      "minLength": 1,
+      "examples": ["S01"]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "temperature": {
+      "type": "number"
+    },
+    "humidity": {
+      "type": "number"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "anomalyResponse": {
+      "type": "object",
+      "required": ["anomaly", "score", "reason"],
+      "properties": {
+        "anomaly": {
+          "type": "boolean"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
