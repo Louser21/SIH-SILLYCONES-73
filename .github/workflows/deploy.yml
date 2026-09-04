@@ -13,7 +13,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Validate deploy secrets
+        id: deploy-secrets
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          if [ -n "$SERVER_HOST" ] && [ -n "$SERVER_USER" ] && [ -n "$SERVER_SSH_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping deploy: SERVER_HOST, SERVER_USER, or SERVER_SSH_KEY is not configured."
+          fi
+
       - name: Deploy via SSH
+        if: ${{ steps.deploy-secrets.outputs.configured == 'true' }}
         uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ secrets.SERVER_HOST }}
