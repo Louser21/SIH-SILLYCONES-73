@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sih-sillycones-73/contracts/anomaly-prediction.schema.json",
+  "title": "AnomalyPrediction",
+  "type": "object",
+  "required": ["anomaly", "score", "reason"],
+  "properties": {
+    "anomaly": {
+      "type": "boolean",
+      "example": true
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "example": 0.87
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "example": "Temperature-humidity inconsistency"
+    }
+  },
+  "additionalProperties": false
+}

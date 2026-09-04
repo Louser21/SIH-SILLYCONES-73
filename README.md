@@ -1,92 +1,110 @@
 # SIH-SILLYCONES-73
 
-Monorepo for your 6-member hackathon team building AI/ML, backend, dashboard, and ingestion in parallel.
+This repository is the foundation for the 48-hour SIH 2026 hackathon project.
 
-The goal of this README is to help your team avoid blind coding, stay unblocked, and ship a stable demo within 48 hours.
+The architecture is intentionally simple: the backend owns the API and the production ML inference path, and the ML logic lives inside the backend instead of as a separate service.
 
-For a full system overview and execution flow, read `REPO_FLOW.md`.
+The goal is to keep the system easy to extend by 6 developers without adding unnecessary infrastructure.
 
-## 1) Repo Philosophy (Read First)
+For the full architecture and execution flow, read [REPO_FLOW.md](REPO_FLOW.md).
 
-- One monorepo, clear contracts, independent streams.
-- Contract-first integration: interface first, implementation second.
-- Small PRs, fast reviews, frequent merges.
-- Every branch should remain runnable, even if features are incomplete.
+## 1) Repo Philosophy
 
-If you follow this, your team can work simultaneously without constant conflicts.
+- One monorepo, clear contracts, independent workstreams.
+- Contract-first development: define the interface before implementation.
+- Small PRs and frequent reviews.
+- Every branch should stay runnable even while a feature is incomplete.
+- No separate ML server for the initial phase.
 
-## 2) Monorepo Layout
+## 2) Current Monorepo Layout
 
 ```text
 SIH-SILLYCONES-73/
-├── backend/        # FastAPI and app logic
-├── frontend/       # Next.js dashboard
-├── ml/             # models, preprocessing, evaluation
-├── ingestion/      # MQTT and simulators
-├── edge/           # ESP32 (later)
-├── contracts/      # shared API schemas/specs
-├── docker-compose.yml
-├── .env.example
-├── .gitignore
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── routes/
+│   │   ├── ml/
+│   │   │   ├── inference/
+│   │   │   │   └── predictor.py
+│   │   │   ├── model/
+│   │   │   └── service.py
+│   │   ├── main.py
+│   │   └── __init__.py
+│   ├── .env.example
+│   ├── requirements.txt
+│   └── .venv/    # local environment, not committed
+├── frontend/
+├── ingestion/
+│   ├── mqtt/
+│   └── simulator/
+├── contracts/
+│   ├── sensor-reading.schema.json
+│   ├── anomaly-prediction.schema.json
+│   ├── anomaly.schema.json
+│   └── openapi.yaml
+├── README.md
+├── REPO_FLOW.md
 ├── CONTRIBUTING.md
-└── README.md
+├── docker-compose.yml
+├── .gitignore
+├── .github/
+└── edge/
 ```
 
-## 3) Team Ownership (6 Members)
+## 3) Architecture Summary
 
-- ML-1: preprocessing + seasonal baseline
-- ML-2: Isolation Forest + Autoencoder
-- ML-3: SHAP + evaluation + streaming integration
-- FS-1: FastAPI backend + APIs
-- FS-2: Next.js dashboard/UI
-- FS-3: ingestion + DB + WebSocket
+The system is designed as:
 
-Rule: ownership means primary responsibility, not exclusive access.
-
-## 4) Safe Git Workflow
-
-Never push directly to main.
-
-Core branches:
-
-- main
-- feature/ml-anomaly
-- feature/ml-seasonality
-- feature/backend
-- feature/dashboard
-- feature/mqtt
-- feature/esp32
-
-Typical flow:
-
-```bash
-git checkout main
-git pull origin main
-git checkout -b feature/dashboard
-# work
-git add .
-git commit -m "Add live sensor chart"
-git push -u origin feature/dashboard
+```text
+Frontend
+   ↓
+Backend API
+   ├── /health
+   └── /api/v1/predict
+       ↓
+   Backend ML inference layer
+       ↓
+   Baseline predictor / future real model
 ```
 
-Then open PR, get review, merge to main.
+This is intentional: the backend owns the inference path and exposes a stable API contract. Later, the baseline predictor can be replaced with a trained ML model without changing the API contract.
 
-## 5) Shared API Contract (Single Source of Truth)
+## 4) Backend + ML Design
 
-Everyone in your team must follow the same payload model.
+The production ML path is embedded under the backend, not as a separate service.
 
-Input:
+Relevant files:
+
+- backend/app/main.py
+- backend/app/api/routes/health.py
+- backend/app/api/routes/predict.py
+- backend/app/ml/inference/predictor.py
+- backend/app/ml/service.py
+
+### Responsibilities
+
+- backend/app/api/routes/: request handling and HTTP endpoints
+- backend/app/ml/inference/: detector logic and predictor implementations
+- backend/app/ml/model/: future trained model artifacts or model wrappers
+- backend/app/ml/service.py: interface used by the API layer
+
+The model is loaded once at startup and reused for requests instead of reinitializing it per request.
+
+## 5) Current API Contract
+
+### Input payload
 
 ```json
 {
   "station_id": "S01",
   "timestamp": "2026-09-05T12:30:00Z",
-  "temperature": 34.2,
-  "humidity": 71.0
+  "temperature": 35.0,
+  "humidity": 75.0
 }
 ```
 
-Output:
+### Output payload
 
 ```json
 {
@@ -98,113 +116,69 @@ Output:
 
 Contract files:
 
-- contracts/anomaly.schema.json
+- contracts/sensor-reading.schema.json
+- contracts/anomaly-prediction.schema.json
 - contracts/openapi.yaml
 
-Change policy:
+The legacy file contracts/anomaly.schema.json remains as a compatibility placeholder and should be treated as a legacy contract until the team decides whether to rename or replace it.
 
-- If contract changes, update both files in the same PR.
-- Label PR title with CONTRACT CHANGE.
-- Notify all stream owners before merge.
+## 6) Health and Prediction Endpoints
 
-## 6) How To Code Safely (Instead of Blind Coding)
-
-Before writing code:
-
-1. Read contract and your folder ownership.
-2. Write a tiny task note in PR description: input, output, side effects.
-3. Define done criteria (example: endpoint returns valid score in [0,1]).
-
-While coding:
-
-1. Keep functions small and deterministic where possible.
-2. Avoid hard-coding cross-team assumptions.
-3. Add clear errors for invalid payloads.
-4. Commit every logical step, not once at the end.
-
-Before pushing:
-
-1. Pull main and resolve conflicts locally.
-2. Run local checks for your area.
-3. Verify no secrets were committed.
-4. Update docs if behavior changed.
-
-## 7) Integration Strategy (Daily, Not Last Day)
-
-Run short integration cycles every day:
-
-1. Backend exposes stable endpoint and mock response.
-2. Frontend consumes real endpoint or stable mock toggle.
-3. ML returns contract-compliant response even with baseline model.
-4. Ingestion sends contract-compliant data (real or simulated).
-
-Do not wait for final model accuracy before integrating.
-
-## 8) Workaround Playbook (When Blocked)
-
-If one team is blocked by another, do not stop development.
-
-Use one of these:
-
-1. Mock endpoint:
-   - Backend unavailable -> frontend uses local JSON/mock service.
-2. Stub model:
-   - ML incomplete -> backend returns deterministic placeholder score.
-3. Replay data:
-   - MQTT unstable -> ingestion replays recorded sample payloads.
-4. Feature flag:
-   - Keep incomplete features hidden but merge-ready.
-
-Every workaround must include:
-
-- TODO owner
-- removal condition
-- target removal date/time
-
-## 9) Day-1 Setup Commands
-
-Create GitHub repo and push scaffold:
+### Health
 
 ```bash
-git init -b main
-git add .
-git commit -m "Initial monorepo scaffold"
-git remote add origin <your-github-repo-url>
-git push -u origin main
+GET /health
 ```
 
-## 10) Local Run Guide
+Response:
 
-### Docker (Recommended For 48-Hour Integration)
+```json
+{"status": "ok"}
+```
 
-Use Docker during integration windows in the 48-hour sprint to keep environments consistent.
-
-Why use it:
-
-1. Same environment for all contributors.
-2. Fast end-to-end startup for backend + frontend + MQTT.
-3. Fewer local dependency issues when time is limited.
-
-Commands:
+### Prediction
 
 ```bash
-docker compose up --build
+POST /api/v1/predict
 ```
 
-Stop containers:
+Example body:
 
-```bash
-docker compose down
+```json
+{
+  "station_id": "S01",
+  "timestamp": "2026-09-05T12:30:00Z",
+  "temperature": 35.0,
+  "humidity": 75.0
+}
 ```
 
-When to skip Docker:
+Example response:
 
-1. You are developing only one module and want fastest iteration.
-2. Docker is slow or unavailable on your machine.
+```json
+{
+  "anomaly": true,
+  "score": 0.87,
+  "reason": "Temperature-humidity inconsistency"
+}
+```
 
-In that case, run services directly using the local commands below.
+## 7) Baseline Predictor
 
-Backend:
+The initial implementation uses a simple rule-based baseline predictor in [backend/app/ml/inference/predictor.py](backend/app/ml/inference/predictor.py).
+
+This is intentionally temporary and meant to satisfy the following conditions:
+
+- the API works immediately
+- frontend and ingestion can integrate early
+- the real ML team can replace the logic later
+- the contract remains stable
+
+The real model should later replace the baseline logic without changing the backend route shape.
+
+## 8) Local Run Guide
+
+### Backend
 
 ```bash
 cd backend
@@ -214,10 +188,73 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-Frontend:
+### Frontend
 
 ```bash
 cd frontend
+npm install
+npm run dev
+```
+
+### Docker (optional for quick demo startup)
+
+```bash
+docker compose up --build
+```
+
+Stop it using:
+
+```bash
+docker compose down
+```
+
+## 9) Git Workflow
+
+Never push directly to main.
+
+Recommended flow:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/backend
+git add .
+git commit -m "Add backend anomaly API"
+git push -u origin feature/backend
+```
+
+Then create a PR, get review, and merge into main.
+
+## 10) Team Ownership
+
+- Backend / API: FastAPI and route logic
+- ML: model logic and predictor replacement inside backend/ml/
+- Frontend: dashboard UI and API consumption
+- Ingestion: sensor simulation and MQTT payload generation
+- Edge: ESP32 or hardware integration later
+
+## 11) Definition of Done
+
+A task is only done when:
+
+1. It works locally.
+2. It follows the data contract.
+3. The change stays in a feature branch.
+4. The PR has a reviewer and a brief summary.
+5. Another teammate can run it with a fresh clone.
+
+## 12) 48-Hour Hackathon Mode
+
+Use this mode to stay focused:
+
+1. Freeze the contract.
+2. Get a working backend endpoint.
+3. Integrate minimal ingestion.
+4. Connect frontend to the backend response.
+5. Replace the baseline predictor with real ML later.
+
+This keeps the project demo-ready without overengineering.
+
 npm install
 npm run dev
 ```

@@ -2,118 +2,123 @@
 
 ## What This Repo Is
 
-This repository is a 48-hour hackathon monorepo for one team of 6 contributors.
+This repository is the foundation for a 48-hour SIH 2026 hackathon project.
 
 It combines:
 
-- Data ingestion (simulated or MQTT)
-- Backend API (FastAPI)
-- ML anomaly logic (baseline now, improved model later)
-- Frontend dashboard (Next.js)
-- Edge placeholder (ESP32 integration later)
+- ingestion (simulated or MQTT input)
+- FastAPI backend
+- production ML inference embedded inside the backend
+- frontend dashboard
+- optional edge integration later
 
-The main objective is to deliver a stable end-to-end anomaly detection demo within 48 hours.
+The main objective is to make the system work end-to-end with a stable API contract and a baseline model before the real model is added.
 
 ## Complete Folder and Subfolder Map
 
-This is what each folder does and how it should be used.
-
 ### Root
 
-- README.md: team playbook and setup.
-- REPO_FLOW.md: architecture and flow reference.
-- CONTRIBUTING.md: branch and PR rules.
-- .env.example: shared environment variable template.
-- .gitignore: ignored files.
-- docker-compose.yml: local multi-service runtime.
+- README.md: team playbook and setup
+- REPO_FLOW.md: architecture and flow reference
+- CONTRIBUTING.md: branch and PR rules
+- docker-compose.yml: local multi-service runtime
+- .github/: CI/CD workflows
+- .env.example: shared environment template
+- .gitignore: ignored files
 
 ### backend/
 
-- backend/app/: FastAPI source code.
-- backend/app/routes/: HTTP endpoints.
-   - health.py: service status endpoint.
-   - anomaly.py: anomaly API endpoint and response contract enforcement.
-- backend/app/services/: business logic layer (model call wrappers, orchestration).
-- backend/app/models/: request/response and domain models (expand here as app grows).
-- backend/requirements.txt: backend Python dependencies.
-- backend/Dockerfile: backend container image definition.
+- backend/app/: FastAPI app source
+- backend/app/main.py: app entrypoint and startup configuration
+- backend/app/api/routes/: HTTP endpoints
+  - health.py: health check
+  - predict.py: anomaly prediction request/response route
+- backend/app/ml/: production ML logic inside backend
+  - inference/predictor.py: temporary baseline predictor
+  - model/: future model wrappers or artifacts
+  - service.py: backend-facing ML interface
+- backend/requirements.txt: backend Python dependencies
+- backend/.env.example: local environment config
 
 ### frontend/
 
-- frontend/app/: Next.js app routes/pages.
-- frontend/components/: UI components.
-- frontend/lib/: API client, helpers, shared frontend utilities.
-- frontend/package.json: frontend dependencies and scripts.
-
-### ml/
-
-- ml/preprocessing/: cleaning, normalization, seasonal baseline prep.
-- ml/features/: feature engineering pipeline.
-- ml/models/: model implementations.
-   - ml/models/isolation_forest/: Isolation Forest artifacts/code.
-   - ml/models/autoencoder/: Autoencoder artifacts/code.
-- ml/anomaly_detection/: inference, score calibration, reason generation.
-- ml/requirements.txt: ML Python dependencies.
+- frontend/app/: Next.js routes/pages
+- frontend/components/: UI components
+- frontend/lib/: shared helpers and API client logic
+- frontend/package.json: frontend dependencies and scripts
 
 ### ingestion/
 
-- ingestion/simulator/: synthetic payload generators.
-- ingestion/mqtt/: MQTT publisher/subscriber connectors.
-- ingestion/README.md: ingestion usage notes.
+- ingestion/simulator/: synthetic payload generator
+- ingestion/mqtt/: MQTT publisher/subscriber code
 
 ### edge/
 
-- edge/esp32/: future ESP32 firmware/integration stubs.
+- edge/esp32/: future hardware/integration stubs
 
 ### contracts/
 
-- contracts/anomaly.schema.json: JSON schema contract.
-- contracts/openapi.yaml: API contract for backend/frontend integration.
+- contracts/sensor-reading.schema.json: input contract
+- contracts/anomaly-prediction.schema.json: output contract
+- contracts/openapi.yaml: OpenAPI contract
+- contracts/anomaly.schema.json: legacy compatibility placeholder
 
 ## System Flow (End-to-End)
 
-1. Sensor payload is generated or received.
-2. Ingestion sends payload to backend endpoint.
-3. Backend validates payload against contract.
-4. Backend computes or requests anomaly score.
-5. Backend returns standardized response.
-6. Frontend displays reading, anomaly status, score, and reason.
+1. Sensor data is generated or received.
+2. Ingestion sends sensor payload to backend.
+3. Backend validates input against the contract.
+4. Backend calls the ML predictor inside backend/app/ml/.
+5. Backend returns anomaly, score, and reason.
+6. Frontend renders the response for demo purposes.
 
-## Folder-to-Folder Runtime Flow
+## Runtime Flow
 
-Use this as the source of truth for who sends what to whom.
-
-1. ingestion/simulator or ingestion/mqtt -> backend/app/routes/anomaly.py
-   - Sends sensor payload in contract format.
-2. backend/app/routes/anomaly.py -> backend/app/services/
-   - Route validates input and delegates scoring logic.
-3. backend/app/services/ -> ml/anomaly_detection/
-   - Service calls ML inference logic (or baseline fallback).
-4. ml/anomaly_detection/ -> ml/features/ and ml/models/
-   - Uses engineered features and selected model.
-5. ml/* result -> backend/app/services/ -> backend/app/routes/anomaly.py
-   - Returns anomaly, score, reason.
-6. backend/app/routes/anomaly.py -> frontend/lib/
-   - Frontend fetches standardized API response.
-7. frontend/lib/ -> frontend/components/ and frontend/app/
-   - Dashboard renders live state for demo.
+1. ingestion/simulator or ingestion/mqtt -> backend/app/api/routes/predict.py
+   - sends sensor payload in contract format
+2. backend/app/api/routes/predict.py -> backend/app/ml/service.py
+   - route delegates to ML service
+3. backend/app/ml/service.py -> backend/app/ml/inference/predictor.py
+   - loads and uses predictor logic
+4. predictor -> backend response
+   - returns anomaly, score, and reason
+5. backend response -> frontend
+   - dashboard displays score and anomaly status
 
 Contract boundary:
 
-- All cross-folder runtime traffic must match contracts/anomaly.schema.json.
-- Backend OpenAPI must stay aligned in contracts/openapi.yaml.
+- All runtime traffic must match the sensor-reading and anomaly-prediction schema.
+- OpenAPI must stay aligned with contracts/openapi.yaml.
 
-## Development Ownership Flow (Who Touches What)
+## ML Placement Rule
+
+The ML code is intentionally not a separate service in this phase.
+
+This repository follows:
+
+```text
+Frontend
+   ↓
+Backend API
+   ├── /health
+   └── /api/v1/predict
+       ↓
+   Backend ML inference layer
+       ↓
+   Baseline predictor / future real model
+```
+
+This avoids unnecessary infrastructure and keeps the system easy to maintain during a short hackathon.
+
+## Development Ownership Flow
 
 1. FS-3 owns ingestion/simulator and ingestion/mqtt.
-2. FS-1 owns backend/app/routes plus backend app wiring.
-3. ML-1/ML-2/ML-3 own ml/preprocessing, ml/features, ml/models, ml/anomaly_detection.
+2. FS-1 owns backend app wiring and API contracts.
+3. ML owners work inside backend/app/ml/.
 4. FS-2 owns frontend/app, frontend/components, frontend/lib.
 5. Contract edits in contracts/ require all streams to recheck compatibility.
 
 ## Data Contract
-
-All components must follow the same payload shape.
 
 Input:
 
@@ -138,51 +143,48 @@ Output:
 
 Contract files:
 
-- contracts/anomaly.schema.json
+- contracts/sensor-reading.schema.json
+- contracts/anomaly-prediction.schema.json
 - contracts/openapi.yaml
 
 ## Folder Responsibilities
 
-- backend/: API routes, request validation, orchestration
+- backend/: API routes, validation, orchestration, and ML integration
 - frontend/: dashboard UI and API consumption
-- ml/: preprocessing, features, anomaly models, evaluation
 - ingestion/: data simulation and MQTT pipeline
-- edge/: optional hardware integration
+- edge/: future hardware integration
 - contracts/: shared interface definitions
 
-## Why `backend/app/routes/anomaly.py` Exists
+## Why the Backend Owns ML for Now
 
-`anomaly.py` is the stable API layer for integration.
+Keeping ML inside the backend ensures:
 
-- It lets frontend and ingestion integrate from day one.
-- It keeps the response shape fixed while ML improves internally.
-- It can start with a deterministic baseline and later call real ML logic.
-
-This prevents cross-team blocking during a short hackathon.
+- no extra server to manage
+- no added deployment complexity during a 48-hour sprint
+- a stable API for all teams
+- easier future replacement of the baseline predictor with the real model
 
 ## 48-Hour Execution Flow
 
 1. Hour 0-6:
-   - Freeze contract.
-   - Ensure backend endpoint runs.
-   - Build frontend with mock/real toggle.
+   - freeze input/output contract
+   - ensure backend endpoint runs
+   - build frontend with mock or live toggle
 2. Hour 6-30:
-   - Connect ingestion to backend.
-   - Replace baseline scoring with ML output.
-   - Connect dashboard to live backend response.
+   - connect ingestion to backend
+   - replace rule-based predictor with real model later
+   - connect dashboard to live backend response
 3. Hour 30-40:
-   - Stabilize errors, logging, and latency.
-   - Improve reason text quality.
+   - stabilize logging, errors, and latency
 4. Hour 40-48:
-   - Freeze features.
-   - Rehearse demo.
-   - Keep fallback path ready.
+   - rehearse demo
+   - keep fallback baseline ready
 
-## Fallback Path (If Anything Breaks)
+## Fallback Path
 
-- If MQTT fails: replay sample JSON payloads.
-- If ML model fails: return deterministic baseline score.
-- If frontend integration fails: switch to local mock mode with recorded API responses.
+- If ingestion fails: replay sample JSON payloads
+- If ML fails: return a deterministic baseline score
+- If frontend fails: use a local mock mode with recorded responses
 
 Rule: a working fallback is better than a broken advanced feature.
 
@@ -198,9 +200,9 @@ Never push directly to main.
 
 ## Definition of Success
 
-The repo is successful for this hackathon if:
+The repo is successful if:
 
-1. A valid sensor payload enters the system.
-2. Backend returns anomaly response in contract format.
-3. Frontend shows live status and reason.
-4. Demo works reliably on demand.
+1. A valid payload enters the system.
+2. Backend returns a contract-compliant anomaly response.
+3. Frontend displays live status and reason.
+4. The demo works reliably on demand.
