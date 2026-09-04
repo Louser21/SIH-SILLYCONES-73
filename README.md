@@ -1,8 +1,10 @@
 # SIH-SILLYCONES-73
 
-Monorepo for a 6-member hackathon team building AI/ML, backend, dashboard, and ingestion in parallel.
+Monorepo for your 6-member hackathon team building AI/ML, backend, dashboard, and ingestion in parallel.
 
-The goal of this README is to help the team avoid blind coding and keep everyone unblocked.
+The goal of this README is to help your team avoid blind coding, stay unblocked, and ship a stable demo within 48 hours.
+
+For a full system overview and execution flow, read `REPO_FLOW.md`.
 
 ## 1) Repo Philosophy (Read First)
 
@@ -11,7 +13,7 @@ The goal of this README is to help the team avoid blind coding and keep everyone
 - Small PRs, fast reviews, frequent merges.
 - Every branch should remain runnable, even if features are incomplete.
 
-If you follow this, 6 people can work simultaneously without constant conflicts.
+If you follow this, your team can work simultaneously without constant conflicts.
 
 ## 2) Monorepo Layout
 
@@ -71,7 +73,7 @@ Then open PR, get review, merge to main.
 
 ## 5) Shared API Contract (Single Source of Truth)
 
-All teams must follow the same payload model.
+Everyone in your team must follow the same payload model.
 
 Input:
 
@@ -173,6 +175,35 @@ git push -u origin main
 
 ## 10) Local Run Guide
 
+### Docker (Recommended For 48-Hour Integration)
+
+Use Docker during integration windows in the 48-hour sprint to keep environments consistent.
+
+Why use it:
+
+1. Same environment for all contributors.
+2. Fast end-to-end startup for backend + frontend + MQTT.
+3. Fewer local dependency issues when time is limited.
+
+Commands:
+
+```bash
+docker compose up --build
+```
+
+Stop containers:
+
+```bash
+docker compose down
+```
+
+When to skip Docker:
+
+1. You are developing only one module and want fastest iteration.
+2. Docker is slow or unavailable on your machine.
+
+In that case, run services directly using the local commands below.
+
 Backend:
 
 ```bash
@@ -210,3 +241,50 @@ A task is done only if:
 4. Another teammate can run it from fresh pull.
 
 If these are not true, the task is not done.
+
+## 12) 48-Hour Hackathon Mode (Time-Boxed)
+
+Use this mode to avoid overengineering and guarantee a demo in 48 hours.
+
+### Must-Have Demo Flow
+
+1. Ingestion sends one valid sensor payload every few seconds.
+2. Backend receives payload and returns anomaly response.
+3. Frontend shows live readings + anomaly badge + score.
+4. One explainability field (reason) is visible in UI.
+
+If this flow works end-to-end, you have a presentable MVP.
+
+### Suggested 48-Hour Time Plan
+
+1. Hour 0-6:
+   - Freeze contract in contracts.
+   - Confirm branch ownership.
+   - Start backend mock + frontend mock view.
+2. Hour 6-30:
+   - Implement real ingestion path.
+   - Replace mock backend response with model/baseline response.
+   - Connect frontend to real API.
+3. Hour 30-40:
+   - Stabilize: bug fixes, latency cleanup, error handling.
+   - Improve model reason quality and dashboard clarity.
+4. Hour 40-48:
+   - Demo script rehearsal.
+   - Prepare fallback path (recorded data replay).
+   - Freeze new features.
+
+### Hard Rules For Fast Delivery
+
+1. No schema changes after midpoint unless critical.
+2. No major refactor in last phase.
+3. Every stream must keep a fallback:
+   - ML fallback: deterministic score logic.
+   - Ingestion fallback: replay JSON payload file.
+   - Frontend fallback: local mock data toggle.
+4. Stop adding features when the full pipeline works once.
+
+### Demo-First Priorities
+
+1. Reliability over perfect model accuracy.
+2. Clear anomaly explanation over fancy UI effects.
+3. End-to-end integration over isolated module quality.
