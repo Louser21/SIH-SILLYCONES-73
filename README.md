@@ -217,10 +217,10 @@ Recommended flow:
 ```bash
 git checkout main
 git pull origin main
-git checkout -b feature/backend
+git checkout -b feature/<module>
 git add .
-git commit -m "Add backend anomaly API"
-git push -u origin feature/backend
+git commit -m "Add <module> changes"
+git push -u origin feature/<module>
 ```
 
 Then create a PR, get review, and merge into main.

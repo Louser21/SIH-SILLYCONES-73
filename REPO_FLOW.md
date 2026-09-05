@@ -112,11 +112,12 @@ This avoids unnecessary infrastructure and keeps the system easy to maintain dur
 
 ## Development Ownership Flow
 
-1. FS-3 owns ingestion/simulator and ingestion/mqtt.
-2. FS-1 owns backend app wiring and API contracts.
-3. ML owners work inside backend/app/ml/.
-4. FS-2 owns frontend/app, frontend/components, frontend/lib.
-5. Contract edits in contracts/ require all streams to recheck compatibility.
+1. Backend owns backend app wiring and API contracts.
+2. Frontend owns frontend/app, frontend/components, frontend/lib.
+3. ML owns backend/app/ml/.
+4. Ingestion owns ingestion/simulator and ingestion/mqtt.
+5. Edge owns edge/esp32/.
+6. Contract edits in contracts/ require all streams to recheck compatibility.
 
 ## Data Contract
 

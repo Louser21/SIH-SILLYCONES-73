@@ -4,12 +4,12 @@
 
 - Protected branch: `main`
 - Working branches:
-  - `feature/backend`
-  - `feature/ml-baseline`
-  - `feature/ml-model`
-  - `feature/dashboard`
-  - `feature/mqtt`
-  - `feature/esp32`
+   - `feature/backend`
+   - `feature/frontend`
+   - `feature/ml`
+   - `feature/ingestion`
+   - `feature/edge`
+   - `feature/contracts`
 
 ## Workflow
 
@@ -29,7 +29,7 @@
    ```
 4. Push and create PR:
    ```bash
-   git push -u origin feature/<name>
+   git push -u origin feature/<module>
    ```
 
 ## Pull Request Rules
